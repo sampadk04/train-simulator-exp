@@ -1,7 +1,7 @@
 function createGround() {
     // Assuming 'radius', 'materials', and 'scene' are globally accessible
     // or will be passed/imported later. For now, keep original references.
-    const groundSize = radius * 3;
+    const groundSize = radius * 4; // Increased from radius * 3 to accommodate larger station
     const groundGeometry = new THREE.PlaneGeometry(groundSize, groundSize);
     groundGeometry.rotateX(-Math.PI / 2);
     const ground = new THREE.Mesh(groundGeometry, materials.grass);
