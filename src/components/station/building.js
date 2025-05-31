@@ -1,7 +1,7 @@
 // filepath: /Users/sampadk04/Desktop/Coding/Non_GitHub/Train_Simulator/js/station/building.js
 // Terminal building components
 
-function createTerminalBuilding(tangent, normal) {
+export function createTerminalBuilding(tangent, normal) {
     const building = new THREE.Group();
     
     // Main building structure
@@ -83,7 +83,7 @@ function createTerminalBuilding(tangent, normal) {
     return building;
 }
 
-function createPlatformCanopy(length) {
+export function createPlatformCanopy(length) {
     const canopy = new THREE.Group();
     
     // Support pillars

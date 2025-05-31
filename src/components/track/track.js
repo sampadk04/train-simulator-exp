@@ -1,9 +1,9 @@
-// Assuming 'radius', 'gauge', 'materials', 'scene', 'curve',
-// 'CircleCurve', 'setObjectOnCurve', and 'createMesh' are globally accessible
-// or will be passed/imported later.
+import { SIMULATION_CONFIG } from '../../core/constants.js';
+import { scene, curve, CircleCurve } from '../../core/scene.js';
+import { materials } from '../../core/materials.js';
+import { createMesh, setObjectOnCurve } from '../../core/scene.js';
 
 function createRail(r) {
-    // Assuming 'THREE' and 'materials' are accessible
     const railShape = new THREE.Shape();
     railShape.moveTo(-0.5, 0).lineTo(0.5, 0).lineTo(0.5, 0.5).lineTo(-0.5, 0.5).lineTo(-0.5, 0);
 
@@ -15,16 +15,16 @@ function createRail(r) {
     );
 }
 
-function createTrack() {
-    // Assuming 'radius', 'gauge', 'scene', 'materials', 'curve',
-    // 'setObjectOnCurve', 'createMesh' are accessible
-    const innerRail = createRail(radius - gauge/2);
-    const outerRail = createRail(radius + gauge/2);
+export function createTrack() {
+    const { RADIUS, GAUGE } = SIMULATION_CONFIG.TRACK;
+    
+    const innerRail = createRail(RADIUS - GAUGE/2);
+    const outerRail = createRail(RADIUS + GAUGE/2);
     innerRail.position.y = outerRail.position.y = 1;
     scene.add(innerRail, outerRail);
 
     const sleeperGeometry = new THREE.BoxGeometry(10, 1, 2);
-    sleeperGeometry.translate(0, 0.5, 0); // Adjusted to match original if y was 0.5
+    sleeperGeometry.translate(0, 0.5, 0);
     for (let i = 0; i < 50; i++) {
         const sleeper = createMesh(sleeperGeometry, materials.sleeper);
         setObjectOnCurve(sleeper, curve, i/50, 0);

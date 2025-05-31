@@ -1,7 +1,7 @@
 // filepath: /Users/sampadk04/Desktop/Coding/Non_GitHub/Train_Simulator/js/station/infrastructure.js
 // Station infrastructure components like entrances, bridges, and walkways
 
-function createEntranceArea(tangent, normal, label) {
+export function createEntranceArea(tangent, normal, label) {
     const entrance = new THREE.Group();
     
     // Entrance plaza
@@ -44,7 +44,7 @@ function createEntranceArea(tangent, normal, label) {
     return entrance;
 }
 
-function createWalkwayBridge() {
+export function createWalkwayBridge() {
     const bridge = new THREE.Group();
     
     // Bridge deck
