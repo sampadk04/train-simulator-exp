@@ -1,7 +1,7 @@
 // filepath: /Users/sampadk04/Desktop/Coding/Non_GitHub/Train_Simulator/js/station/amenities.js
 // Station amenities like benches, kiosks, vending machines, lighting, and signage
 
-function addStationAmenities(stationGroup, mainPlatform, secondaryPlatform, tangent, normal, platformHeight) {
+export function addStationAmenities(stationGroup, mainPlatform, secondaryPlatform, tangent, normal, platformHeight) {
     // Benches on main platform
     for (let i = -3; i <= 3; i++) {
         if (i === 0) continue;
@@ -119,7 +119,7 @@ function createVendingMachine() {
     return machine;
 }
 
-function addStationLighting(stationGroup, mainPlatform, secondaryPlatform, tangent, normal, platformHeight) {
+export function addStationLighting(stationGroup, mainPlatform, secondaryPlatform, tangent, normal, platformHeight) {
     // Platform lights
     for (let i = -3; i <= 3; i++) {
         const lightPole = createLightPole();
@@ -151,7 +151,7 @@ function createLightPole() {
     return pole;
 }
 
-function addStationSignage(stationGroup, mainPlatform, tangent, normal, platformHeight) {
+export function addStationSignage(stationGroup, mainPlatform, tangent, normal, platformHeight) {
     // Platform number signs
     for (let i = 0; i < 2; i++) {
         const sign = createPlatformSign(i + 1);

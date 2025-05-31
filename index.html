@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Train Simulator</title>
+    <title>Train Simulator - Modular</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -24,25 +24,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
     
-    <!-- Load modules -->
-    <script src="js/materials.js"></script>
-    <script src="js/curves.js"></script>
-    <script src="js/scene.js"></script>
-    
-    <!-- Load station modules in dependency order -->
-    <script src="js/station/building.js"></script>
-    <script src="js/station/infrastructure.js"></script>
-    <script src="js/station/amenities.js"></script>
-    <script src="js/station/station.js"></script>
-    <script src="js/station.js"></script>
-    
-    <script src="js/ground.js"></script>
-    <script src="js/track.js"></script>
-    <script src="js/tree.js"></script>
-    <script src="js/tunnel.js"></script>
-    <script src="js/environment.js"></script>
-    <script src="js/train.js"></script>
-    <script src="js/controls.js"></script>
-    <script src="js/main.js"></script>
+    <!-- Load the modular ES6 application -->
+    <script type="module" src="src/main.js"></script>
 </body>
 </html>

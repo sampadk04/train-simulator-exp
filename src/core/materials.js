@@ -1,4 +1,7 @@
-const materials = {
+import { SIMULATION_CONFIG } from './constants.js';
+
+// Three.js materials for all objects in the simulation
+export const materials = {
     rail: new THREE.MeshBasicMaterial({ color: 0x808080 }),
     sleeper: new THREE.MeshBasicMaterial({ color: 0x8B4513 }),
     engine: new THREE.MeshBasicMaterial({ color: 0x800000 }),
@@ -21,3 +24,6 @@ const materials = {
     treeLeaves: new THREE.MeshLambertMaterial({ color: 0x228B22 }),
     tunnel: new THREE.MeshLambertMaterial({ color: 0x606060, side: THREE.DoubleSide })
 };
+
+// Make materials globally accessible for backward compatibility
+window.materials = materials;

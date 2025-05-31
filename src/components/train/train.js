@@ -1,34 +1,54 @@
+import { SIMULATION_CONFIG } from '../../core/constants.js';
+import { scene, curve } from '../../core/scene.js';
+import { materials } from '../../core/materials.js';
+import { createMesh, addToGroup, setObjectOnCurve } from '../../core/scene.js';
+
+// Train state
 let engine, compartments = [], connectors = [];
-let numCompartments = 3;
-const distanceBetween = 13;
-const dt = distanceBetween / (2 * Math.PI * radius);
+let numCompartments = SIMULATION_CONFIG.TRAIN.INITIAL_COMPARTMENTS;
+const distanceBetween = SIMULATION_CONFIG.TRAIN.DISTANCE_BETWEEN_COMPARTMENTS;
+const dt = distanceBetween / (2 * Math.PI * SIMULATION_CONFIG.TRACK.RADIUS);
 let wheelRotationSpeed = 0.002;
 
 function createEngine() {
     const engine = new THREE.Group();
     
     const engineParts = [
-        { type: 'CylinderGeometry', args: [2, 2, 10, 16], material: 'boiler', 
+        { type: 'CylinderGeometry', args: [2, 2, 10, 16], material: materials.boiler, 
           position: {y: 4, z: 0}, rotation: {x: Math.PI/2} },
-        { type: 'BoxGeometry', args: [4, 1, 12], material: 'engine', 
+        { type: 'BoxGeometry', args: [4, 1, 12], material: materials.engine, 
           position: {y: 1.5, z: -1} },
-        { type: 'BoxGeometry', args: [3.8, 3, 4], material: 'cabin', 
+        // Engine hood - main front section
+        { type: 'BoxGeometry', args: [3.5, 2.5, 6], material: materials.engine, 
+          position: {y: 3.5, z: 3} },
+        // Hood top section with slight taper
+        { type: 'BoxGeometry', args: [3.2, 1, 5.5], material: materials.boiler, 
+          position: {y: 5.25, z: 3} },
+        // Hood side vents
+        { type: 'BoxGeometry', args: [0.2, 1.5, 4], material: materials.metalTrim, 
+          position: {y: 3.5, z: 3, x: 1.6} },
+        { type: 'BoxGeometry', args: [0.2, 1.5, 4], material: materials.metalTrim, 
+          position: {y: 3.5, z: 3, x: -1.6} },
+        // Hood front grille
+        { type: 'BoxGeometry', args: [2.5, 1.8, 0.3], material: materials.metalTrim, 
+          position: {y: 3.5, z: 5.85} },
+        { type: 'BoxGeometry', args: [3.8, 3, 4], material: materials.cabin, 
           position: {y: 5.5, z: -3.5} },
-        { type: 'BoxGeometry', args: [4, 0.5, 4.5], material: 'engine', 
+        { type: 'BoxGeometry', args: [4, 0.5, 4.5], material: materials.engine, 
           position: {y: 7.25, z: -3.5} },
-        { type: 'PlaneGeometry', args: [1.5, 1], material: 'windows', 
+        { type: 'PlaneGeometry', args: [1.5, 1], material: materials.windows, 
           position: {y: 5.75, z: -5.51} },
-        { type: 'CylinderGeometry', args: [0.7, 0.7, 2.5, 16], material: 'smokestack', 
+        { type: 'CylinderGeometry', args: [0.7, 0.7, 2.5, 16], material: materials.smokestack, 
           position: {y: 6.75, z: 3.5} },
-        { type: 'CylinderGeometry', args: [1, 0.7, 0.5, 16], material: 'chimneyCap', 
+        { type: 'CylinderGeometry', args: [1, 0.7, 0.5, 16], material: materials.chimneyCap, 
           position: {y: 8.25, z: 3.5} },
-        { type: 'CylinderGeometry', args: [1.5, 0.5, 2, 8], material: 'cowcatcher', 
+        { type: 'CylinderGeometry', args: [1.5, 0.5, 2, 8], material: materials.cowcatcher, 
           position: {y: 2, z: 6}, rotation: {x: Math.PI/2} },
-        { type: 'SphereGeometry', args: [0.5, 8, 8], material: 'bell', 
+        { type: 'SphereGeometry', args: [0.5, 8, 8], material: materials.bell, 
           position: {y: 6, z: 1.5} },
-        { type: 'BoxGeometry', args: [0.5, 0.5, 1], material: 'hitch', 
+        { type: 'BoxGeometry', args: [0.5, 0.5, 1], material: materials.hitch, 
           position: {y: 2, z: 6} },
-        { type: 'BoxGeometry', args: [0.5, 0.5, 1], material: 'hitch', 
+        { type: 'BoxGeometry', args: [0.5, 0.5, 1], material: materials.hitch, 
           position: {y: 2, z: -6} }
     ];
     
@@ -36,6 +56,23 @@ function createEngine() {
         addToGroup(engine, part.type, part.args, part.material, part.position, part.rotation);
     });
     
+    // Hood headlights
+    [-1.2, 1.2].forEach(x => {
+        const headlightGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16);
+        headlightGeometry.rotateX(Math.PI / 2);
+        const headlight = createMesh(headlightGeometry, materials.metalTrim);
+        headlight.position.set(x, 4.2, 5.9);
+        engine.add(headlight);
+        
+        // Headlight lens
+        const lensGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.1, 16);
+        lensGeometry.rotateX(Math.PI / 2);
+        const lens = createMesh(lensGeometry, materials.windows);
+        lens.position.set(x, 4.2, 6.0);
+        engine.add(lens);
+    });
+    
+    // Side windows
     const sideWindowGeometry = new THREE.PlaneGeometry(1.5, 1);
     sideWindowGeometry.rotateY(Math.PI / 2);
     
@@ -45,6 +82,7 @@ function createEngine() {
         engine.add(sideWindow);
     });
     
+    // Wheels
     [-2.2, 2.2].forEach(x => {
         [-2.5, 0, 2.5].forEach((z, i) => {
             const wheelSize = i === 1 ? 1.5 : 1.2;
@@ -59,15 +97,6 @@ function createEngine() {
     
     scene.add(engine);
     return engine;
-}
-
-function createWheel(x, z) {
-    const wheelGroup = new THREE.Group();
-    const wheelGeometry = new THREE.CylinderGeometry(1, 1, 0.5, 16);
-    wheelGeometry.rotateZ(Math.PI / 2);
-    wheelGroup.add(createMesh(wheelGeometry, materials.wheel));
-    wheelGroup.position.set(x, 1, z);
-    return wheelGroup;
 }
 
 function createCompartment() {
@@ -87,6 +116,7 @@ function createCompartment() {
     roofGeometry.translate(0, 5, 0);
     compartment.add(createMesh(roofGeometry, materials.compartmentRoof));
     
+    // Trim
     const trimWidth = 0.2;
     [-1, 1].forEach(side => {
         const trimGeometry = new THREE.BoxGeometry(trimWidth, trimWidth, bodyLength);
@@ -94,6 +124,7 @@ function createCompartment() {
         compartment.add(createMesh(trimGeometry, materials.metalTrim));
     });
     
+    // Windows
     const windowWidth = 1.2;
     const windowHeight = 1.5;
     const windowSpacing = 2;
@@ -109,6 +140,7 @@ function createCompartment() {
         }
     });
     
+    // Platforms and railings
     [-bodyLength/2 - 0.5, bodyLength/2 + 0.5].forEach(z => {
         const platformGeometry = new THREE.BoxGeometry(bodyWidth, 0.5, 1);
         platformGeometry.translate(0, 1, z);
@@ -135,6 +167,7 @@ function createCompartment() {
         compartment.add(createMesh(middleRailing, materials.railings));
     });
     
+    // Doors
     [-bodyLength/2 + 0.51, bodyLength/2 - 0.51].forEach(z => {
         const doorGeometry = new THREE.PlaneGeometry(1.5, 3);
         doorGeometry.translate(0, 2.5, z);
@@ -145,16 +178,19 @@ function createCompartment() {
         compartment.add(createMesh(handleGeometry, materials.metalTrim));
     });
     
+    // Hitches
     [-bodyLength/2 - 1, bodyLength/2 + 1].forEach(z => {
         const hitch = createMesh(new THREE.BoxGeometry(0.5, 0.5, 1), materials.hitch);
         hitch.position.set(0, 1.8, z);
         compartment.add(hitch);
     });
     
+    // Undercarriage
     const undercarriageGeometry = new THREE.BoxGeometry(bodyWidth - 0.5, 0.5, bodyLength - 2);
     undercarriageGeometry.translate(0, 1, 0);
     compartment.add(createMesh(undercarriageGeometry, materials.engine));
     
+    // Wheels
     const wheelRadius = 1;
     [-2.2, 2.2].forEach(x => {
         [-3, 3].forEach(z => {
@@ -180,7 +216,7 @@ function createConnector() {
     return connector;
 }
 
-function setupTrain() {
+export function setupTrain(t) {
     engine = createEngine();
     
     for (let i = 0; i < numCompartments; i++) {
@@ -199,7 +235,7 @@ function setupTrain() {
     updateConnectorPositions();
 }
 
-function updateConnectorPositions() {
+export function updateConnectorPositions() {
     compartments.forEach((compartment, i) => {
         if (i < connectors.length) {
             const frontPos = i === 0 
@@ -213,7 +249,7 @@ function updateConnectorPositions() {
     });
 }
 
-function updateTrainPosition(t) {
+export function updateTrainPosition(t) {
     setObjectOnCurve(engine, curve, t, 1.5);
     rotateWheels(engine);
     
@@ -226,12 +262,12 @@ function updateTrainPosition(t) {
     updateConnectorPositions();
 }
 
-function updateWheelRotationSpeed() {
+export function updateWheelRotationSpeed() {
     wheelRotationSpeed = window.speed * 2;
 }
 
-function addCompartment() {
-    if (numCompartments >= 20) return;
+export function addCompartment() {
+    if (numCompartments >= SIMULATION_CONFIG.TRAIN.MAX_COMPARTMENTS) return;
     
     const newCompartment = createCompartment();
     compartments.push(newCompartment);
@@ -240,7 +276,7 @@ function addCompartment() {
     connectors.push(newConnector);
     
     const lastIndex = compartments.length - 1;
-    const tComp = ((t - (lastIndex + 1) * dt) % 1 + 1) % 1;
+    const tComp = ((window.t - (lastIndex + 1) * dt) % 1 + 1) % 1;
     setObjectOnCurve(newCompartment, curve, tComp, 1.5);
     
     const frontPos = lastIndex === 0 
@@ -252,11 +288,11 @@ function addCompartment() {
     newConnector.lookAt(backPos);
     
     numCompartments++;
-    updateCompartmentInfo();
+    return numCompartments;
 }
 
-function removeCompartment() {
-    if (numCompartments <= 1) return;
+export function removeCompartment() {
+    if (numCompartments <= SIMULATION_CONFIG.TRAIN.MIN_COMPARTMENTS) return;
     
     const lastCompartment = compartments.pop();
     const lastConnector = connectors.pop();
@@ -265,7 +301,7 @@ function removeCompartment() {
     scene.remove(lastConnector);
     
     numCompartments--;
-    updateCompartmentInfo();
+    return numCompartments;
 }
 
 function rotateWheels(obj) {
@@ -276,4 +312,13 @@ function rotateWheels(obj) {
             child.children[0].rotation.x += wheelRotationSpeed;
         }
     });
+}
+
+export function getTrainState() {
+    return {
+        numCompartments,
+        engine,
+        compartments,
+        connectors
+    };
 }
