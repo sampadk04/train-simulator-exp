@@ -86,14 +86,21 @@ export function createTerminalBuilding(tangent, normal) {
 export function createPlatformCanopy(length) {
     const canopy = new THREE.Group();
     
-    // Support pillars
-    const pillarGeometry = new THREE.CylinderGeometry(0.3, 0.3, 8, 8);
+    // Support pillars - extending from ground to roof
+    // Note: The canopy itself will be positioned at PLATFORM_HEIGHT + 6 = 7.2
+    // So we need pillars that reach from ground (y=0) to the roof at that height
+    const actualRoofHeight = 1.25; // Height of roof relative to canopy base
+    const totalHeightFromGround = 7.2 + actualRoofHeight; // Total height from ground to roof
+    const pillarHeight = totalHeightFromGround;
+    const pillarGeometry = new THREE.CylinderGeometry(0.3, 0.3, pillarHeight, 8);
     const pillarMaterial = new THREE.MeshLambertMaterial({ color: 0x696969 });
     
     for (let i = -length/2; i <= length/2; i += 15) {
         for (let side of [-3, 3]) {
             const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
-            pillar.position.set(side, 4, i);
+            // Position pillar to extend from ground up
+            // Since canopy base is at y=7.2, we need to offset the pillar down
+            pillar.position.set(side, pillarHeight/2 - 7.2, i);
             canopy.add(pillar);
         }
     }
@@ -102,7 +109,7 @@ export function createPlatformCanopy(length) {
     const roofGeometry = new THREE.BoxGeometry(8, 0.5, length);
     const roofMaterial = new THREE.MeshLambertMaterial({ color: 0x2F4F4F });
     const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-    roof.position.y = 8.25;
+    roof.position.y = actualRoofHeight;
     canopy.add(roof);
     
     // Glass panels
@@ -115,7 +122,7 @@ export function createPlatformCanopy(length) {
     
     for (let i = -length/2; i <= length/2; i += 10) {
         const glass = new THREE.Mesh(glassGeometry, glassMaterial);
-        glass.position.set(0, 8.5, i);
+        glass.position.set(0, actualRoofHeight + 0.25, i);
         glass.rotation.x = -Math.PI/2;
         canopy.add(glass);
     }
