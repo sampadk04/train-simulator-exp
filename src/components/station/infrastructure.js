@@ -73,5 +73,53 @@ export function createWalkwayBridge() {
         bridge.add(beam);
     }
     
+    // Add stairs on both ends
+    const stairMaterial = new THREE.MeshLambertMaterial({ color: 0xA9A9A9 });
+    const stairWidth = 2.5;
+    const stairDepth = 0.8;
+    const stairHeight = 0.3;
+    const numSteps = 8;
+    const totalStairLength = numSteps * stairDepth;
+    
+    // Stairs at both ends (-z and +z directions)
+    for (let end of [-1, 1]) {
+        const stairGroup = new THREE.Group();
+        
+        // Create individual steps
+        for (let step = 0; step < numSteps; step++) {
+            const stepGeometry = new THREE.BoxGeometry(stairWidth, stairHeight, stairDepth);
+            const stepMesh = new THREE.Mesh(stepGeometry, stairMaterial);
+            
+            // Position each step - rotated 180 degrees
+            const stepY = 4 - (step + 1) * (4 / numSteps); // Descend from bridge level to ground
+            const stepZ = end * (10 - step * stairDepth); // Position moving inward toward bridge
+            
+            stepMesh.position.set(0, stepY, stepZ);
+            stairGroup.add(stepMesh);
+        }
+        
+        // Add handrails for stairs
+        const handrailHeight = 1;
+        const handrailGeometry = new THREE.BoxGeometry(0.1, handrailHeight, totalStairLength);
+        
+        for (let side of [-1.2, 1.2]) {
+            const handrail = new THREE.Mesh(handrailGeometry, railingMaterial);
+            handrail.position.set(side, 2.5, end * (10 - totalStairLength/2));
+            stairGroup.add(handrail);
+            
+            // Handrail posts
+            for (let post = 0; post <= numSteps; post += 2) {
+                const postGeometry = new THREE.CylinderGeometry(0.05, 0.05, handrailHeight, 8);
+                const postMesh = new THREE.Mesh(postGeometry, railingMaterial);
+                const postY = (4 - post * 4 / numSteps) - handrailHeight/2;
+                const postZ = end * (10 - post * stairDepth);
+                postMesh.position.set(side, postY, postZ);
+                stairGroup.add(postMesh);
+            }
+        }
+        
+        bridge.add(stairGroup);
+    }
+    
     return bridge;
 }
