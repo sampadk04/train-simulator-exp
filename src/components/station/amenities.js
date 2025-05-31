@@ -10,7 +10,8 @@ export function addStationAmenities(stationGroup, mainPlatform, secondaryPlatfor
             tangent.clone().multiplyScalar(i * 12)
         ).add(normal.clone().multiplyScalar(2));
         bench.position.y = platformHeight;
-        bench.lookAt(bench.position.clone().add(tangent));
+        // Rotate bench by -90 degrees to face the track properly
+        bench.rotation.y = -Math.PI / 2;
         stationGroup.add(bench);
     }
     
@@ -38,26 +39,26 @@ export function addStationAmenities(stationGroup, mainPlatform, secondaryPlatfor
 function createBench() {
     const bench = new THREE.Group();
     
-    // Seat
-    const seatGeometry = new THREE.BoxGeometry(0.5, 0.1, 2);
+    // Seat - made even bigger
+    const seatGeometry = new THREE.BoxGeometry(1.0, 0.2, 3.5);
     const seatMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
     const seat = new THREE.Mesh(seatGeometry, seatMaterial);
-    seat.position.y = 0.4;
+    seat.position.y = 0.6;
     bench.add(seat);
     
-    // Backrest
-    const backGeometry = new THREE.BoxGeometry(0.1, 0.8, 2);
+    // Backrest - positioned at the back (positive x direction)
+    const backGeometry = new THREE.BoxGeometry(0.2, 1.4, 3.5);
     const back = new THREE.Mesh(backGeometry, seatMaterial);
-    back.position.set(-0.25, 0.7, 0);
+    back.position.set(0.5, 1.0, 0);
     bench.add(back);
     
-    // Legs
-    for (let i of [-0.8, 0.8]) {
-        for (let j of [-0.15, 0.15]) {
-            const legGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.4, 8);
+    // Legs - adjusted for larger bench
+    for (let i of [-1.4, 1.4]) {
+        for (let j of [-0.3, 0.3]) {
+            const legGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.6, 8);
             const legMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
             const leg = new THREE.Mesh(legGeometry, legMaterial);
-            leg.position.set(j, 0.2, i);
+            leg.position.set(j, 0.3, i);
             bench.add(leg);
         }
     }
