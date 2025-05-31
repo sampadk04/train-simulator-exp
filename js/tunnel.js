@@ -31,17 +31,18 @@ function createTunnel(scene, materials, curve, station, trackRadius) {
     const tunnelTubeRadius = 6; // Reduced from 10 to be smaller
     const tunnelRadialSegments = 12; // Smoothness of the tube's cross-section
     const tunnelTubularSegments = 32; // Reduced segments for better performance
-
     const deltaTTunnel = tunnelLength / (2 * Math.PI * trackRadius);
     const tunnelHalfArc = deltaTTunnel / 2;
-
-    const tunnelStartT = (station.t - tunnelHalfArc + 1) % 1;
-    const tunnelEndT = (station.t + tunnelHalfArc + 1) % 1;
-
+    
+    // Position tunnel farther away from station
+    // Station is at t=0.25, so place tunnel at opposite side (t=0.75)
+    const tunnelCenterT = 0.75; // 270 degrees around the track, opposite from station
+    const tunnelStartT = (tunnelCenterT - tunnelHalfArc + 1) % 1;
+    const tunnelEndT = (tunnelCenterT + tunnelHalfArc + 1) % 1;
+    
     // The path for the TubeGeometry should be elevated so the bottom of the tube is at y=0
     const tunnelPathElevation = tunnelTubeRadius;
     const tunnelCurve = new TunnelPathCurve(curve, tunnelStartT, tunnelEndT, tunnelPathElevation);
-
     // Ensure tunnelCurve has a valid length for TubeGeometry
     if (tunnelCurve.arcLength <= 0) {
         console.warn("Tunnel curve has zero or negative arc length. Tunnel not created.");
@@ -52,13 +53,11 @@ function createTunnel(scene, materials, curve, station, trackRadius) {
         tunnelCurve,          // path
         tunnelTubularSegments, // tubularSegments
         tunnelTubeRadius,     // radius
-        tunnelRadialSegments, // radialSegments
+        tunnelRadialSegments, // radialSegments,
         false                 // closed
     );
-
     const tunnelMesh = new THREE.Mesh(tunnelGeometry, materials.tunnel);
     scene.add(tunnelMesh);
-
     return {
         startT: tunnelStartT,
         endT: tunnelEndT,
