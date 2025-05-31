@@ -1,30 +1,70 @@
 // filepath: /Users/sampadk04/Desktop/Coding/Non_GitHub/Train_Simulator/js/station/amenities.js
 // Station amenities like benches, kiosks, vending machines, lighting, and signage
 
+import { geometryPool } from '../../core/geometry-pool.js';
+import { materials } from '../../core/materials.js';
+import { createMesh } from '../../core/scene.js';
+
+// Cached geometries for station amenities
+const amenityGeometries = {
+    bench: {
+        seat: () => geometryPool.getGeometry('BoxGeometry', 1.0, 0.2, 3.5),
+        back: () => geometryPool.getGeometry('BoxGeometry', 0.2, 1.4, 3.5),
+        leg: () => geometryPool.getGeometry('CylinderGeometry', 0.1, 0.1, 0.6, 8)
+    },
+    kiosk: {
+        main: () => geometryPool.getGeometry('BoxGeometry', 3, 2.5, 2),
+        window: () => geometryPool.getGeometry('PlaneGeometry', 2, 1.5),
+        roof: () => geometryPool.getGeometry('BoxGeometry', 3.5, 0.3, 2.5)
+    },
+    vendingMachine: {
+        body: () => geometryPool.getGeometry('BoxGeometry', 1.2, 2, 0.8),
+        window: () => geometryPool.getGeometry('PlaneGeometry', 0.8, 1.2),
+        slot: () => geometryPool.getGeometry('BoxGeometry', 0.2, 0.05, 0.1)
+    },
+    lightPole: {
+        pole: () => geometryPool.getGeometry('CylinderGeometry', 0.15, 0.15, 6, 8),
+        fixture: () => geometryPool.getGeometry('SphereGeometry', 0.5, 16, 16)
+    },
+    sign: {
+        board: () => geometryPool.getGeometry('BoxGeometry', 3, 2, 0.2),
+        number: () => geometryPool.getGeometry('PlaneGeometry', 1, 1),
+        post: () => geometryPool.getGeometry('CylinderGeometry', 0.1, 0.1, 3, 8),
+        direction: () => geometryPool.getGeometry('BoxGeometry', 6, 1.5, 0.2),
+        text: () => geometryPool.getGeometry('PlaneGeometry', 5, 1),
+        arm: () => geometryPool.getGeometry('BoxGeometry', 0.2, 0.2, 2)
+    }
+};
+
 export function addStationAmenities(stationGroup, mainPlatform, secondaryPlatform, tangent, normal, platformHeight) {
-    // Benches on main platform
+    // Benches on main platform - batch creation
+    const benchPositions = [];
     for (let i = -3; i <= 3; i++) {
         if (i === 0) continue;
-        const bench = createBench();
-        bench.position.copy(mainPlatform.position).add(
-            tangent.clone().multiplyScalar(i * 12)
-        ).add(normal.clone().multiplyScalar(2));
-        bench.position.y = platformHeight;
-        // Rotate bench by -90 degrees to face the track properly
-        bench.rotation.y = -Math.PI / 2;
-        stationGroup.add(bench);
+        benchPositions.push({
+            position: mainPlatform.position.clone()
+                .add(tangent.clone().multiplyScalar(i * 12))
+                .add(normal.clone().multiplyScalar(2)),
+            rotation: -Math.PI / 2
+        });
     }
     
-    // Kiosks
+    benchPositions.forEach(({ position, rotation }) => {
+        const bench = createBench();
+        bench.position.copy(position);
+        bench.position.y = platformHeight;
+        bench.rotation.y = rotation;
+        stationGroup.add(bench);
+    });
+    
+    // Kiosk
     const kiosk = createKiosk();
-    kiosk.position.copy(mainPlatform.position).add(
-        normal.clone().multiplyScalar(3)
-    );
+    kiosk.position.copy(mainPlatform.position).add(normal.clone().multiplyScalar(3));
     kiosk.position.y = platformHeight;
     kiosk.lookAt(kiosk.position.clone().add(tangent));
     stationGroup.add(kiosk);
     
-    // Vending machines
+    // Vending machines - batch creation
     for (let i = 0; i < 2; i++) {
         const vendingMachine = createVendingMachine();
         vendingMachine.position.copy(secondaryPlatform.position).add(
@@ -39,25 +79,21 @@ export function addStationAmenities(stationGroup, mainPlatform, secondaryPlatfor
 function createBench() {
     const bench = new THREE.Group();
     
-    // Seat - made even bigger
-    const seatGeometry = new THREE.BoxGeometry(1.0, 0.2, 3.5);
-    const seatMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-    const seat = new THREE.Mesh(seatGeometry, seatMaterial);
+    // Seat
+    const seat = createMesh(amenityGeometries.bench.seat().clone(), materials.compartment);
     seat.position.y = 0.6;
     bench.add(seat);
     
-    // Backrest - positioned at the back (positive x direction)
-    const backGeometry = new THREE.BoxGeometry(0.2, 1.4, 3.5);
-    const back = new THREE.Mesh(backGeometry, seatMaterial);
+    // Backrest
+    const back = createMesh(amenityGeometries.bench.back().clone(), materials.compartment);
     back.position.set(0.5, 1.0, 0);
     bench.add(back);
     
-    // Legs - adjusted for larger bench
+    // Legs - reuse same geometry
+    const legGeometry = amenityGeometries.bench.leg();
     for (let i of [-1.4, 1.4]) {
         for (let j of [-0.3, 0.3]) {
-            const legGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.6, 8);
-            const legMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
-            const leg = new THREE.Mesh(legGeometry, legMaterial);
+            const leg = createMesh(legGeometry.clone(), materials.railings);
             leg.position.set(j, 0.3, i);
             bench.add(leg);
         }
@@ -70,23 +106,17 @@ function createKiosk() {
     const kiosk = new THREE.Group();
     
     // Main structure
-    const mainGeometry = new THREE.BoxGeometry(3, 2.5, 2);
-    const mainMaterial = new THREE.MeshLambertMaterial({ color: 0xDC143C });
-    const main = new THREE.Mesh(mainGeometry, mainMaterial);
+    const main = createMesh(amenityGeometries.kiosk.main().clone(), materials.engine);
     main.position.y = 1.25;
     kiosk.add(main);
     
     // Window
-    const windowGeometry = new THREE.PlaneGeometry(2, 1.5);
-    const windowMaterial = new THREE.MeshBasicMaterial({ color: 0x000080 });
-    const window = new THREE.Mesh(windowGeometry, windowMaterial);
+    const window = createMesh(amenityGeometries.kiosk.window().clone(), materials.windows);
     window.position.set(0, 1.5, 1.01);
     kiosk.add(window);
     
     // Roof
-    const roofGeometry = new THREE.BoxGeometry(3.5, 0.3, 2.5);
-    const roofMaterial = new THREE.MeshLambertMaterial({ color: 0x8B0000 });
-    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+    const roof = createMesh(amenityGeometries.kiosk.roof().clone(), materials.boiler);
     roof.position.y = 2.65;
     kiosk.add(roof);
     
@@ -97,23 +127,17 @@ function createVendingMachine() {
     const machine = new THREE.Group();
     
     // Main body
-    const bodyGeometry = new THREE.BoxGeometry(1.2, 2, 0.8);
-    const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x4169E1 });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    const body = createMesh(amenityGeometries.vendingMachine.body().clone(), materials.cabin);
     body.position.y = 1;
     machine.add(body);
     
     // Display window
-    const windowGeometry = new THREE.PlaneGeometry(0.8, 1.2);
-    const windowMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-    const window = new THREE.Mesh(windowGeometry, windowMaterial);
+    const window = createMesh(amenityGeometries.vendingMachine.window().clone(), materials.wheel);
     window.position.set(0, 1.2, 0.41);
     machine.add(window);
     
     // Coin slot
-    const slotGeometry = new THREE.BoxGeometry(0.2, 0.05, 0.1);
-    const slotMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
-    const slot = new THREE.Mesh(slotGeometry, slotMaterial);
+    const slot = createMesh(amenityGeometries.vendingMachine.slot().clone(), materials.wheel);
     slot.position.set(0.3, 0.8, 0.41);
     machine.add(slot);
     
@@ -121,7 +145,7 @@ function createVendingMachine() {
 }
 
 export function addStationLighting(stationGroup, mainPlatform, secondaryPlatform, tangent, normal, platformHeight) {
-    // Platform lights
+    // Platform lights - batch creation
     for (let i = -3; i <= 3; i++) {
         const lightPole = createLightPole();
         lightPole.position.copy(mainPlatform.position).add(
@@ -136,16 +160,12 @@ function createLightPole() {
     const pole = new THREE.Group();
     
     // Pole
-    const poleGeometry = new THREE.CylinderGeometry(0.15, 0.15, 6, 8);
-    const poleMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
-    const polePost = new THREE.Mesh(poleGeometry, poleMaterial);
+    const polePost = createMesh(amenityGeometries.lightPole.pole().clone(), materials.railings);
     polePost.position.y = 3;
     pole.add(polePost);
     
     // Light fixture
-    const fixtureGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-    const fixtureMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFF0 });
-    const fixture = new THREE.Mesh(fixtureGeometry, fixtureMaterial);
+    const fixture = createMesh(amenityGeometries.lightPole.fixture().clone(), materials.windows);
     fixture.position.y = 6.5;
     pole.add(fixture);
     
@@ -186,22 +206,16 @@ function createPlatformSign(number) {
     const sign = new THREE.Group();
     
     // Sign board
-    const boardGeometry = new THREE.BoxGeometry(3, 2, 0.2);
-    const boardMaterial = new THREE.MeshLambertMaterial({ color: 0x000080 });
-    const board = new THREE.Mesh(boardGeometry, boardMaterial);
+    const board = createMesh(amenityGeometries.sign.board().clone(), materials.cabin);
     sign.add(board);
     
     // Number display
-    const numberGeometry = new THREE.PlaneGeometry(1, 1);
-    const numberMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
-    const numberDisplay = new THREE.Mesh(numberGeometry, numberMaterial);
+    const numberDisplay = createMesh(amenityGeometries.sign.number().clone(), materials.windows);
     numberDisplay.position.z = 0.11;
     sign.add(numberDisplay);
     
     // Support post
-    const postGeometry = new THREE.CylinderGeometry(0.1, 0.1, 3, 8);
-    const postMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
-    const post = new THREE.Mesh(postGeometry, postMaterial);
+    const post = createMesh(amenityGeometries.sign.post().clone(), materials.railings);
     post.position.y = -2.5;
     sign.add(post);
     
@@ -212,22 +226,16 @@ function createDirectionSign(text) {
     const sign = new THREE.Group();
     
     // Arrow sign
-    const signGeometry = new THREE.BoxGeometry(6, 1.5, 0.2);
-    const signMaterial = new THREE.MeshLambertMaterial({ color: 0x008000 });
-    const signBoard = new THREE.Mesh(signGeometry, signMaterial);
+    const signBoard = createMesh(amenityGeometries.sign.direction().clone(), materials.treeLeaves);
     sign.add(signBoard);
     
     // Text area
-    const textGeometry = new THREE.PlaneGeometry(5, 1);
-    const textMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
-    const textDisplay = new THREE.Mesh(textGeometry, textMaterial);
+    const textDisplay = createMesh(amenityGeometries.sign.text().clone(), materials.windows);
     textDisplay.position.z = 0.11;
     sign.add(textDisplay);
     
     // Support arm
-    const armGeometry = new THREE.BoxGeometry(0.2, 0.2, 2);
-    const armMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
-    const arm = new THREE.Mesh(armGeometry, armMaterial);
+    const arm = createMesh(amenityGeometries.sign.arm().clone(), materials.railings);
     arm.position.set(-3, 0, -1);
     sign.add(arm);
     

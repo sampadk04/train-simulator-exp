@@ -1,5 +1,6 @@
 import { SIMULATION_CONFIG } from '../core/constants.js';
 import { addCompartment, removeCompartment, getTrainState, updateWheelRotationSpeed } from '../components/train/train.js';
+import { throttle, debounce } from '../utils/index.js';
 
 export function updateCompartmentInfo() {
     const trainState = getTrainState();
@@ -9,6 +10,24 @@ export function updateCompartmentInfo() {
 }
 
 export function setupControls() {
+    // Throttled functions for better performance
+    const throttledAddCompartment = throttle(() => {
+        addCompartment();
+        updateCompartmentInfo();
+    }, 300);
+
+    const throttledRemoveCompartment = throttle(() => {
+        removeCompartment();
+        updateCompartmentInfo();
+    }, 300);
+
+    // Debounced speed update for smooth performance
+    const debouncedSpeedUpdate = debounce((value) => {
+        window.speed = parseFloat(value);
+        document.getElementById('speedValue').textContent = (window.speed / 0.001).toFixed(1) + 'x';
+        updateWheelRotationSpeed();
+    }, 50);
+
     const buttonConfig = {
         'startBtn': { 
             action: () => { window.isRunning = true; }, 
@@ -21,16 +40,10 @@ export function setupControls() {
             disableOthers: ['startBtn'] 
         },
         'addCompartmentBtn': { 
-            action: () => {
-                addCompartment();
-                updateCompartmentInfo();
-            }
+            action: throttledAddCompartment
         },
         'removeCompartmentBtn': { 
-            action: () => {
-                removeCompartment();
-                updateCompartmentInfo();
-            }
+            action: throttledRemoveCompartment
         }
     };
     
@@ -48,10 +61,9 @@ export function setupControls() {
         });
     });
     
+    // Use input event with debouncing for smoother slider response
     document.getElementById('speedSlider').addEventListener('input', function() {
-        window.speed = parseFloat(this.value);
-        document.getElementById('speedValue').textContent = (window.speed / 0.001).toFixed(1) + 'x';
-        updateWheelRotationSpeed();
+        debouncedSpeedUpdate(this.value);
     });
     
     document.getElementById('stopBtn').disabled = true;

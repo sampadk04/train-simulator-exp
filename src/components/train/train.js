@@ -2,6 +2,8 @@ import { SIMULATION_CONFIG } from '../../core/constants.js';
 import { scene, curve } from '../../core/scene.js';
 import { materials } from '../../core/materials.js';
 import { createMesh, addToGroup, setObjectOnCurve } from '../../core/scene.js';
+import { geometryPool, CommonGeometries } from '../../core/geometry-pool.js';
+import { disposeObject3D } from '../../utils/index.js';
 
 // Train state
 let engine, compartments = [], connectors = [];
@@ -10,88 +12,108 @@ const distanceBetween = SIMULATION_CONFIG.TRAIN.DISTANCE_BETWEEN_COMPARTMENTS;
 const dt = distanceBetween / (2 * Math.PI * SIMULATION_CONFIG.TRACK.RADIUS);
 let wheelRotationSpeed = 0.002;
 
+// Cached configurations for performance
+const enginePartsConfig = [
+    { type: 'CylinderGeometry', args: [2, 2, 10, 16], material: 'boiler', 
+      position: {y: 4, z: 0}, rotation: {x: Math.PI/2} },
+    { type: 'BoxGeometry', args: [4, 1, 12], material: 'engine', 
+      position: {y: 1.5, z: -1} },
+    // Engine hood - main front section
+    { type: 'BoxGeometry', args: [3.5, 2.5, 6], material: 'engine', 
+      position: {y: 3.5, z: 3} },
+    // Hood top section with slight taper
+    { type: 'BoxGeometry', args: [3.2, 1, 5.5], material: 'boiler', 
+      position: {y: 5.25, z: 3} },
+    // Hood side vents
+    { type: 'BoxGeometry', args: [0.2, 1.5, 4], material: 'metalTrim', 
+      position: {y: 3.5, z: 3, x: 1.6} },
+    { type: 'BoxGeometry', args: [0.2, 1.5, 4], material: 'metalTrim', 
+      position: {y: 3.5, z: 3, x: -1.6} },
+    // Hood front grille
+    { type: 'BoxGeometry', args: [2.5, 1.8, 0.3], material: 'metalTrim', 
+      position: {y: 3.5, z: 5.85} },
+    { type: 'BoxGeometry', args: [3.8, 3, 4], material: 'cabin', 
+      position: {y: 5.5, z: -3.5} },
+    { type: 'BoxGeometry', args: [4, 0.5, 4.5], material: 'engine', 
+      position: {y: 7.25, z: -3.5} },
+    { type: 'PlaneGeometry', args: [1.5, 1], material: 'windows', 
+      position: {y: 5.75, z: -5.51} },
+    { type: 'CylinderGeometry', args: [0.7, 0.7, 2.5, 16], material: 'smokestack', 
+      position: {y: 6.75, z: 3.5} },
+    { type: 'CylinderGeometry', args: [1, 0.7, 0.5, 16], material: 'chimneyCap', 
+      position: {y: 8.25, z: 3.5} },
+    { type: 'CylinderGeometry', args: [1.5, 0.5, 2, 8], material: 'cowcatcher', 
+      position: {y: 2, z: 6}, rotation: {x: Math.PI/2} },
+    { type: 'SphereGeometry', args: [0.5, 8, 8], material: 'bell', 
+      position: {y: 6, z: 1.5} },
+    { type: 'BoxGeometry', args: [0.5, 0.5, 1], material: 'hitch', 
+      position: {y: 2, z: 6} },
+    { type: 'BoxGeometry', args: [0.5, 0.5, 1], material: 'hitch', 
+      position: {y: 2, z: -6} }
+];
+
+// Cached wheel references for performance
+let engineWheelRefs = [];
+let compartmentWheelRefs = [];
+
 function createEngine() {
     const engine = new THREE.Group();
+    engineWheelRefs = [];
     
-    const engineParts = [
-        { type: 'CylinderGeometry', args: [2, 2, 10, 16], material: materials.boiler, 
-          position: {y: 4, z: 0}, rotation: {x: Math.PI/2} },
-        { type: 'BoxGeometry', args: [4, 1, 12], material: materials.engine, 
-          position: {y: 1.5, z: -1} },
-        // Engine hood - main front section
-        { type: 'BoxGeometry', args: [3.5, 2.5, 6], material: materials.engine, 
-          position: {y: 3.5, z: 3} },
-        // Hood top section with slight taper
-        { type: 'BoxGeometry', args: [3.2, 1, 5.5], material: materials.boiler, 
-          position: {y: 5.25, z: 3} },
-        // Hood side vents
-        { type: 'BoxGeometry', args: [0.2, 1.5, 4], material: materials.metalTrim, 
-          position: {y: 3.5, z: 3, x: 1.6} },
-        { type: 'BoxGeometry', args: [0.2, 1.5, 4], material: materials.metalTrim, 
-          position: {y: 3.5, z: 3, x: -1.6} },
-        // Hood front grille
-        { type: 'BoxGeometry', args: [2.5, 1.8, 0.3], material: materials.metalTrim, 
-          position: {y: 3.5, z: 5.85} },
-        { type: 'BoxGeometry', args: [3.8, 3, 4], material: materials.cabin, 
-          position: {y: 5.5, z: -3.5} },
-        { type: 'BoxGeometry', args: [4, 0.5, 4.5], material: materials.engine, 
-          position: {y: 7.25, z: -3.5} },
-        { type: 'PlaneGeometry', args: [1.5, 1], material: materials.windows, 
-          position: {y: 5.75, z: -5.51} },
-        { type: 'CylinderGeometry', args: [0.7, 0.7, 2.5, 16], material: materials.smokestack, 
-          position: {y: 6.75, z: 3.5} },
-        { type: 'CylinderGeometry', args: [1, 0.7, 0.5, 16], material: materials.chimneyCap, 
-          position: {y: 8.25, z: 3.5} },
-        { type: 'CylinderGeometry', args: [1.5, 0.5, 2, 8], material: materials.cowcatcher, 
-          position: {y: 2, z: 6}, rotation: {x: Math.PI/2} },
-        { type: 'SphereGeometry', args: [0.5, 8, 8], material: materials.bell, 
-          position: {y: 6, z: 1.5} },
-        { type: 'BoxGeometry', args: [0.5, 0.5, 1], material: materials.hitch, 
-          position: {y: 2, z: 6} },
-        { type: 'BoxGeometry', args: [0.5, 0.5, 1], material: materials.hitch, 
-          position: {y: 2, z: -6} }
-    ];
-    
-    engineParts.forEach(part => {
-        addToGroup(engine, part.type, part.args, part.material, part.position, part.rotation);
+    enginePartsConfig.forEach(part => {
+        const geometry = geometryPool.getGeometry(part.type, ...part.args);
+        const material = materials[part.material];
+        const mesh = createMesh(geometry.clone(), material);
+        
+        if (part.rotation) {
+            mesh.geometry.rotateX(part.rotation.x || 0);
+            mesh.geometry.rotateY(part.rotation.y || 0);
+            mesh.geometry.rotateZ(part.rotation.z || 0);
+        }
+        mesh.position.set(part.position.x || 0, part.position.y || 0, part.position.z || 0);
+        engine.add(mesh);
     });
     
-    // Hood headlights
+    // Hood headlights - reuse geometry
+    const headlightGeometry = geometryPool.getGeometry('CylinderGeometry', 0.3, 0.3, 0.2, 16);
+    const lensGeometry = geometryPool.getGeometry('CylinderGeometry', 0.25, 0.25, 0.1, 16);
+    
     [-1.2, 1.2].forEach(x => {
-        const headlightGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16);
-        headlightGeometry.rotateX(Math.PI / 2);
-        const headlight = createMesh(headlightGeometry, materials.metalTrim);
+        const headlight = createMesh(headlightGeometry.clone(), materials.metalTrim);
+        headlight.geometry.rotateX(Math.PI / 2);
         headlight.position.set(x, 4.2, 5.9);
         engine.add(headlight);
         
-        // Headlight lens
-        const lensGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.1, 16);
-        lensGeometry.rotateX(Math.PI / 2);
-        const lens = createMesh(lensGeometry, materials.windows);
+        const lens = createMesh(lensGeometry.clone(), materials.windows);
+        lens.geometry.rotateX(Math.PI / 2);
         lens.position.set(x, 4.2, 6.0);
         engine.add(lens);
     });
     
-    // Side windows
-    const sideWindowGeometry = new THREE.PlaneGeometry(1.5, 1);
-    sideWindowGeometry.rotateY(Math.PI / 2);
+    // Side windows - reuse geometry
+    const sideWindowGeometry = geometryPool.getGeometry('PlaneGeometry', 1.5, 1);
     
     [-1.91, 1.91].forEach(x => {
         const sideWindow = createMesh(sideWindowGeometry.clone(), materials.windows);
+        sideWindow.geometry.rotateY(Math.PI / 2);
         sideWindow.position.set(x, 5.75, -3.5);
         engine.add(sideWindow);
     });
     
-    // Wheels
+    // Wheels with cached references
     [-2.2, 2.2].forEach(x => {
         [-2.5, 0, 2.5].forEach((z, i) => {
             const wheelSize = i === 1 ? 1.5 : 1.2;
             const wheelGroup = new THREE.Group();
-            const wheelGeometry = new THREE.CylinderGeometry(wheelSize, wheelSize, 0.6, 16);
-            wheelGeometry.rotateZ(Math.PI / 2);
-            wheelGroup.add(createMesh(wheelGeometry, materials.wheel));
+            const wheelGeometry = geometryPool.getGeometry('CylinderGeometry', wheelSize, wheelSize, 0.6, 16);
+            const wheelMesh = createMesh(wheelGeometry.clone(), materials.wheel);
+            wheelMesh.geometry.rotateZ(Math.PI / 2);
+            wheelGroup.add(wheelMesh);
             wheelGroup.position.set(x, wheelSize, z);
             engine.add(wheelGroup);
+            
+            // Cache wheel reference for rotation
+            engineWheelRefs.push(wheelMesh);
         });
     });
     
@@ -101,117 +123,135 @@ function createEngine() {
 
 function createCompartment() {
     const compartment = new THREE.Group();
+    const compartmentWheels = [];
     
     const bodyHeight = 4;
     const bodyWidth = 4;
     const bodyLength = 10;
     
-    const bodyGeometry = new THREE.BoxGeometry(bodyWidth, bodyHeight, bodyLength);
-    bodyGeometry.translate(0, 3, 0);
-    compartment.add(createMesh(bodyGeometry, materials.compartment));
+    // Reuse common geometries
+    const bodyGeometry = geometryPool.getGeometry('BoxGeometry', bodyWidth, bodyHeight, bodyLength);
+    const bodyMesh = createMesh(bodyGeometry.clone(), materials.compartment);
+    bodyMesh.position.set(0, 3, 0);
+    compartment.add(bodyMesh);
     
-    const roofGeometry = new THREE.CylinderGeometry(bodyWidth/2, bodyWidth/2, bodyLength, 16, 1, false, 0, Math.PI);
-    roofGeometry.rotateZ(Math.PI / 2);
-    roofGeometry.rotateY(Math.PI / 2);
-    roofGeometry.translate(0, 5, 0);
-    compartment.add(createMesh(roofGeometry, materials.compartmentRoof));
+    const roofGeometry = geometryPool.getGeometry('CylinderGeometry', bodyWidth/2, bodyWidth/2, bodyLength, 16, 1, false, 0, Math.PI);
+    const roofMesh = createMesh(roofGeometry.clone(), materials.compartmentRoof);
+    roofMesh.geometry.rotateZ(Math.PI / 2);
+    roofMesh.geometry.rotateY(Math.PI / 2);
+    roofMesh.position.set(0, 5, 0);
+    compartment.add(roofMesh);
     
     // Trim
     const trimWidth = 0.2;
+    const trimGeometry = geometryPool.getGeometry('BoxGeometry', trimWidth, trimWidth, bodyLength);
     [-1, 1].forEach(side => {
-        const trimGeometry = new THREE.BoxGeometry(trimWidth, trimWidth, bodyLength);
-        trimGeometry.translate(side * (bodyWidth/2 - trimWidth/2), 5, 0);
-        compartment.add(createMesh(trimGeometry, materials.metalTrim));
+        const trim = createMesh(trimGeometry.clone(), materials.metalTrim);
+        trim.position.set(side * (bodyWidth/2 - trimWidth/2), 5, 0);
+        compartment.add(trim);
     });
     
-    // Windows
+    // Windows - batch creation
     const windowWidth = 1.2;
     const windowHeight = 1.5;
     const windowSpacing = 2;
     const numWindows = 4;
+    const windowGeometry = geometryPool.getGeometry('PlaneGeometry', windowWidth, windowHeight);
     
     [-1, 1].forEach(side => {
         for (let i = 0; i < numWindows; i++) {
             const windowPos = (i - (numWindows - 1) / 2) * windowSpacing;
-            const windowGeometry = new THREE.PlaneGeometry(windowWidth, windowHeight);
-            windowGeometry.rotateY(Math.PI / 2 * side);
-            windowGeometry.translate(side * (bodyWidth/2 + 0.01), 3.5, windowPos);
-            compartment.add(createMesh(windowGeometry, materials.windows));
+            const window = createMesh(windowGeometry.clone(), materials.windows);
+            window.geometry.rotateY(Math.PI / 2 * side);
+            window.position.set(side * (bodyWidth/2 + 0.01), 3.5, windowPos);
+            compartment.add(window);
         }
     });
     
     // Platforms and railings
     [-bodyLength/2 - 0.5, bodyLength/2 + 0.5].forEach(z => {
-        const platformGeometry = new THREE.BoxGeometry(bodyWidth, 0.5, 1);
-        platformGeometry.translate(0, 1, z);
-        compartment.add(createMesh(platformGeometry, materials.engine));
+        const platformGeometry = geometryPool.getGeometry('BoxGeometry', bodyWidth, 0.5, 1);
+        const platformMesh = createMesh(platformGeometry.clone(), materials.engine);
+        platformMesh.position.set(0, 1, z);
+        compartment.add(platformMesh);
         
         const railHeight = 2;
         
-        const topRailing = new THREE.CylinderGeometry(0.1, 0.1, bodyWidth, 8);
-        topRailing.rotateX(Math.PI/2);
-        topRailing.rotateZ(Math.PI/2);
-        topRailing.translate(0, 2.5, z);
-        compartment.add(createMesh(topRailing, materials.railings));
+        const topRailingGeometry = geometryPool.getGeometry('CylinderGeometry', 0.1, 0.1, bodyWidth, 8);
+        const topRailingMesh = createMesh(topRailingGeometry.clone(), materials.railings);
+        topRailingMesh.geometry.rotateX(Math.PI/2);
+        topRailingMesh.geometry.rotateZ(Math.PI/2);
+        topRailingMesh.position.set(0, 2.5, z);
+        compartment.add(topRailingMesh);
         
         [-bodyWidth/2 + 0.3, bodyWidth/2 - 0.3].forEach(x => {
-            const supportGeometry = new THREE.CylinderGeometry(0.1, 0.1, railHeight, 8);
-            supportGeometry.translate(x, 1.5 + railHeight/2, z);
-            compartment.add(createMesh(supportGeometry, materials.railings));
+            const supportGeometry = geometryPool.getGeometry('CylinderGeometry', 0.1, 0.1, railHeight, 8);
+            const supportMesh = createMesh(supportGeometry.clone(), materials.railings);
+            supportMesh.position.set(x, 1.5 + railHeight/2, z);
+            compartment.add(supportMesh);
         });
         
-        const middleRailing = new THREE.CylinderGeometry(0.08, 0.08, bodyWidth - 0.6, 8);
-        middleRailing.rotateX(Math.PI/2);
-        middleRailing.rotateZ(Math.PI/2);
-        middleRailing.translate(0, 1.8, z);
-        compartment.add(createMesh(middleRailing, materials.railings));
+        const middleRailingGeometry = geometryPool.getGeometry('CylinderGeometry', 0.08, 0.08, bodyWidth - 0.6, 8);
+        const middleRailingMesh = createMesh(middleRailingGeometry.clone(), materials.railings);
+        middleRailingMesh.geometry.rotateX(Math.PI/2);
+        middleRailingMesh.geometry.rotateZ(Math.PI/2);
+        middleRailingMesh.position.set(0, 1.8, z);
+        compartment.add(middleRailingMesh);
     });
     
     // Doors
     [-bodyLength/2 + 0.51, bodyLength/2 - 0.51].forEach(z => {
-        const doorGeometry = new THREE.PlaneGeometry(1.5, 3);
-        doorGeometry.translate(0, 2.5, z);
-        compartment.add(createMesh(doorGeometry, materials.engine));
+        const doorGeometry = geometryPool.getGeometry('PlaneGeometry', 1.5, 3);
+        const doorMesh = createMesh(doorGeometry.clone(), materials.engine);
+        doorMesh.position.set(0, 2.5, z);
+        compartment.add(doorMesh);
         
-        const handleGeometry = new THREE.SphereGeometry(0.15, 8, 8);
-        handleGeometry.translate(0.4, 2.5, z - 0.01);
-        compartment.add(createMesh(handleGeometry, materials.metalTrim));
+        const handleGeometry = geometryPool.getGeometry('SphereGeometry', 0.15, 8, 8);
+        const handleMesh = createMesh(handleGeometry.clone(), materials.metalTrim);
+        handleMesh.position.set(0.4, 2.5, z - 0.01);
+        compartment.add(handleMesh);
     });
     
     // Hitches
     [-bodyLength/2 - 1, bodyLength/2 + 1].forEach(z => {
-        const hitch = createMesh(new THREE.BoxGeometry(0.5, 0.5, 1), materials.hitch);
-        hitch.position.set(0, 1.8, z);
-        compartment.add(hitch);
+        const hitchGeometry = geometryPool.getGeometry('BoxGeometry', 0.5, 0.5, 1);
+        const hitchMesh = createMesh(hitchGeometry.clone(), materials.hitch);
+        hitchMesh.position.set(0, 1.8, z);
+        compartment.add(hitchMesh);
     });
     
     // Undercarriage
-    const undercarriageGeometry = new THREE.BoxGeometry(bodyWidth - 0.5, 0.5, bodyLength - 2);
-    undercarriageGeometry.translate(0, 1, 0);
-    compartment.add(createMesh(undercarriageGeometry, materials.engine));
+    const undercarriageGeometry = geometryPool.getGeometry('BoxGeometry', bodyWidth - 0.5, 0.5, bodyLength - 2);
+    const undercarriageMesh = createMesh(undercarriageGeometry.clone(), materials.engine);
+    undercarriageMesh.position.set(0, 1, 0);
+    compartment.add(undercarriageMesh);
     
-    // Wheels
+    // Wheels with cached references for performance
     const wheelRadius = 1;
+    const wheelGeometry = geometryPool.getGeometry('CylinderGeometry', wheelRadius, wheelRadius, 0.5, 16);
     [-2.2, 2.2].forEach(x => {
         [-3, 3].forEach(z => {
             const wheelGroup = new THREE.Group();
-            const wheelGeometry = new THREE.CylinderGeometry(wheelRadius, wheelRadius, 0.5, 16);
-            wheelGeometry.rotateZ(Math.PI / 2);
-            wheelGroup.add(createMesh(wheelGeometry, materials.wheel));
+            const wheelMesh = createMesh(wheelGeometry.clone(), materials.wheel);
+            wheelMesh.geometry.rotateZ(Math.PI / 2);
+            wheelGroup.add(wheelMesh);
             wheelGroup.position.set(x, wheelRadius, z);
             compartment.add(wheelGroup);
+            
+            // Cache wheel reference
+            compartmentWheels.push(wheelMesh);
         });
     });
     
+    compartmentWheelRefs.push(compartmentWheels);
     scene.add(compartment);
     return compartment;
 }
 
 function createConnector() {
-    const connector = createMesh(
-        new THREE.CylinderGeometry(0.2, 0.2, 2.5, 8).rotateZ(Math.PI / 2),
-        materials.connector
-    );
+    const connectorGeometry = geometryPool.getGeometry('CylinderGeometry', 0.2, 0.2, 2.5, 8);
+    const connector = createMesh(connectorGeometry.clone(), materials.connector);
+    connector.geometry.rotateZ(Math.PI / 2);
     scene.add(connector);
     return connector;
 }
@@ -251,12 +291,11 @@ export function updateConnectorPositions() {
 
 export function updateTrainPosition(t) {
     setObjectOnCurve(engine, curve, t, 1.5);
-    rotateWheels(engine);
+    rotateWheelsOptimized();
     
     compartments.forEach((compartment, i) => {
         const tComp = ((t - (i + 1) * dt) % 1 + 1) % 1;
         setObjectOnCurve(compartment, curve, tComp, 1.5);
-        rotateWheels(compartment);
     });
     
     updateConnectorPositions();
@@ -297,13 +336,33 @@ export function removeCompartment() {
     const lastCompartment = compartments.pop();
     const lastConnector = connectors.pop();
     
-    scene.remove(lastCompartment);
-    scene.remove(lastConnector);
+    // Proper cleanup
+    disposeObject3D(lastCompartment);
+    disposeObject3D(lastConnector);
+    
+    // Remove wheel references
+    compartmentWheelRefs.pop();
     
     numCompartments--;
     return numCompartments;
 }
 
+// Optimized wheel rotation using cached references
+function rotateWheelsOptimized() {
+    // Rotate engine wheels
+    engineWheelRefs.forEach(wheel => {
+        wheel.rotation.x += wheelRotationSpeed;
+    });
+    
+    // Rotate compartment wheels
+    compartmentWheelRefs.forEach(wheelGroup => {
+        wheelGroup.forEach(wheel => {
+            wheel.rotation.x += wheelRotationSpeed;
+        });
+    });
+}
+
+// Legacy function for backward compatibility
 function rotateWheels(obj) {
     obj.traverse(child => {
         if (child instanceof THREE.Group && 
