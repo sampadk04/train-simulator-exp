@@ -18,5 +18,7 @@ const materials = {
     metalTrim: new THREE.MeshBasicMaterial({ color: 0xC0C0C0 }),
     grass: new THREE.MeshLambertMaterial({ color: 0x4CAF50 }),
     treeTrunk: new THREE.MeshLambertMaterial({ color: 0x8B4513 }),
-    treeLeaves: new THREE.MeshLambertMaterial({ color: 0x228B22 })
+    treeLeaves: new THREE.MeshLambertMaterial({ color: 0x228B22 }),
+    rock: new THREE.MeshLambertMaterial({ color: 0x888888 }), // A medium gray for rock
+    tunnelWall: new THREE.MeshLambertMaterial({ color: 0x666666 }) // A slightly darker gray for tunnel interior
 };
