@@ -16,7 +16,7 @@ function setupEnvironment() {
     const tunnelTangent = curve.getTangentAt(tunnelT);
 
     // Create and position Hill
-    const hill = createHill(70, 30); // hillRadius, hillHeight
+    const hill = createHill(70, 40); // hillRadius, hillHeight
     hill.position.copy(tunnelPositionOnCurve);
     // Adjust hill y based on its geometry's height for base at y=0
     // Assuming createHill returns a mesh with geometry parameters
@@ -59,7 +59,7 @@ function setupEnvironment() {
 
     // Create and position Tunnel
     const tunnelProperties = {
-        length: 60, // How long the tunnel is along the track
+        length: 80, // Increased length for better visibility with conical hill
         crossSectionShape: tunnelShape.getPoints(), // Use the points from the THREE.Shape
         material: materials.tunnelWall // Or materials.rock
     };
