@@ -1,0 +1,53 @@
+body { 
+    margin: 0; 
+    overflow: hidden; 
+}
+
+canvas { 
+    display: block; 
+}
+
+#controls {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+button {
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    font-size: 16px;
+    margin-right: 10px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+button:hover { filter: brightness(90%); }
+button:disabled { background-color: #ccc; cursor: not-allowed; }
+#startBtn { background-color: #4CAF50; }
+#stopBtn { background-color: #f44336; }
+#addCompartmentBtn { background-color: #2196F3; }
+#removeCompartmentBtn { background-color: #ff9800; }
+#compartmentInfo { margin-top: 10px; font-weight: bold; }
+
+.slider-container { 
+    margin-top: 10px; 
+    display: flex; 
+    align-items: center; 
+}
+
+#speedSlider { 
+    margin: 0 10px; 
+    width: 100px; 
+}
+
+#speedValue {
+    min-width: 30px;
+}
