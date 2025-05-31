@@ -8,9 +8,9 @@ function createStation() {
     const stationPosition = curve.getPoint(stationT);
     const stationGroup = new THREE.Group();
 
-    // Platform
-    const platformWidth = 8;
-    const platformLength = 40;
+    // Platform - made larger to better connect with tunnel
+    const platformWidth = 12; // Increased from 8
+    const platformLength = 60; // Increased from 40 to better span tunnel area
     const platformHeight = 1;
     const platformGeometry = new THREE.BoxGeometry(platformWidth, platformHeight, platformLength);
     const platformMaterial = new THREE.MeshLambertMaterial({ color: 0xB5B5B5 });
@@ -26,10 +26,10 @@ function createStation() {
     platform.lookAt(platform.position.clone().add(tangent));
     stationGroup.add(platform);
 
-    // Station building
-    const buildingWidth = 12;
-    const buildingDepth = 8;
-    const buildingHeight = 6;
+    // Station building - made larger
+    const buildingWidth = 16; // Increased from 12
+    const buildingDepth = 10; // Increased from 8
+    const buildingHeight = 8; // Increased from 6
     const buildingGeometry = new THREE.BoxGeometry(buildingWidth, buildingHeight, buildingDepth);
     const buildingMaterial = new THREE.MeshLambertMaterial({ color: 0xD2B48C });
     const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
@@ -42,7 +42,7 @@ function createStation() {
     stationGroup.add(building);
 
     // Roof
-    const roofHeight = 3;
+    const roofHeight = 4; // Increased from 3
     const roofGeometry = new THREE.ConeGeometry(buildingWidth/1.5, roofHeight, 4);
     const roofMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
     const roof = new THREE.Mesh(roofGeometry, roofMaterial);
@@ -52,13 +52,13 @@ function createStation() {
     roof.rotation.y = building.rotation.y + Math.PI/4;
     stationGroup.add(roof);
 
-    // Windows and door
+    // Windows and door - adjusted for larger building
     const windowMaterial = new THREE.MeshBasicMaterial({ color: 0x87CEEB });
     const frontNormal = normal.clone().negate();
-    const windowSize = { width: 1.5, height: 2 };
-    const doorSize = { width: 2, height: 3.5 };
+    const windowSize = { width: 1.5, height: 2.5 }; // Made windows taller
+    const doorSize = { width: 2.5, height: 4 }; // Made door larger
 
-    for (let i = -1; i <= 1; i++) {
+    for (let i = -2; i <= 2; i++) { // More windows for larger building
         if (i === 0) continue;
         const windowGeometry = new THREE.PlaneGeometry(windowSize.width, windowSize.height);
         const window = new THREE.Mesh(windowGeometry, windowMaterial);
@@ -81,41 +81,41 @@ function createStation() {
     door.lookAt(door.position.clone().add(frontNormal));
     stationGroup.add(door);
 
-    // Benches
+    // Benches - more benches for longer platform
     const benchMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-    for (let i = -1; i <= 1; i++) {
+    for (let i = -2; i <= 2; i++) { // More benches spread across longer platform
         const benchSeatGeometry = new THREE.BoxGeometry(1, 0.5, 2.5);
         const benchSeat = new THREE.Mesh(benchSeatGeometry, benchMaterial);
         benchSeat.position.copy(platform.position)
             .add(frontNormal.clone().multiplyScalar(platformWidth/4))
-            .add(tangent.clone().multiplyScalar(i * 10));
+            .add(tangent.clone().multiplyScalar(i * 12)); // Adjusted spacing
         benchSeat.position.y = platformHeight + benchSeatGeometry.parameters.height/2;
         benchSeat.lookAt(benchSeat.position.clone().add(tangent));
         stationGroup.add(benchSeat);
 
-        const benchBackGeometry = new THREE.BoxGeometry(1, 1, 2.5); // Corrected: benchBackGeometry was benchSeatGeometry
-        const benchBack = new THREE.Mesh(benchBackGeometry, benchMaterial); // Corrected: benchBackGeometry
+        const benchBackGeometry = new THREE.BoxGeometry(1, 1, 2.5);
+        const benchBack = new THREE.Mesh(benchBackGeometry, benchMaterial);
         benchBack.position.copy(benchSeat.position)
-            .add(tangent.clone().multiplyScalar(benchSeatGeometry.parameters.width/2)); // This should be benchBackGeometry.parameters.depth / 2 or similar if rotating
-        benchBack.position.y = platformHeight + benchSeatGeometry.parameters.height + benchBackGeometry.parameters.height/2; // Corrected: benchBackGeometry
+            .add(tangent.clone().multiplyScalar(benchSeatGeometry.parameters.width/2));
+        benchBack.position.y = platformHeight + benchSeatGeometry.parameters.height + benchBackGeometry.parameters.height/2;
         benchBack.lookAt(benchBack.position.clone().add(tangent));
         stationGroup.add(benchBack);
     }
 
-    // Station sign
-    const signGeometry = new THREE.BoxGeometry(10, 2, 0.5);
+    // Station sign - made larger
+    const signGeometry = new THREE.BoxGeometry(14, 2.5, 0.5); // Increased size
     const signMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
     const sign = new THREE.Mesh(signGeometry, signMaterial);
 
     sign.position.copy(platform.position)
         .add(tangent.clone().multiplyScalar(-platformLength/4))
         .add(frontNormal.clone().multiplyScalar(platformWidth/2 - 1));
-    sign.position.y = platformHeight + 5;
+    sign.position.y = platformHeight + 6; // Raised higher
     sign.lookAt(sign.position.clone().add(normal));
     stationGroup.add(sign);
 
     // Sign poles
-    const poleGeometry = new THREE.CylinderGeometry(0.2, 0.2, 6);
+    const poleGeometry = new THREE.CylinderGeometry(0.2, 0.2, 7); // Taller poles
     const poleMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
     for (let i = -1; i <= 1; i += 2) {
         const pole = new THREE.Mesh(poleGeometry, poleMaterial);
@@ -131,8 +131,8 @@ function createStation() {
         position: stationPosition,
         tangent: tangent,
         normal: normal,
-        width: Math.max(platformWidth, buildingWidth) + 10,
-        length: Math.max(platformLength, buildingDepth) + 10,
+        width: Math.max(platformWidth, buildingWidth) + 12, // Increased area
+        length: Math.max(platformLength, buildingDepth) + 15, // Increased area
         t: stationT
     };
 }

@@ -27,10 +27,10 @@ class TunnelPathCurve extends THREE.Curve {
 }
 
 function createTunnel(scene, materials, curve, station, trackRadius) {
-    const tunnelLength = 80; // Length of the tunnel along the curve
-    const tunnelTubeRadius = 10; // Radius of the tunnel tube itself
+    const tunnelLength = 30; // Reduced from 80 to be more proportionate
+    const tunnelTubeRadius = 6; // Reduced from 10 to be smaller
     const tunnelRadialSegments = 12; // Smoothness of the tube's cross-section
-    const tunnelTubularSegments = 64; // Smoothness along the length of the tube
+    const tunnelTubularSegments = 32; // Reduced segments for better performance
 
     const deltaTTunnel = tunnelLength / (2 * Math.PI * trackRadius);
     const tunnelHalfArc = deltaTTunnel / 2;
