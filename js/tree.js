@@ -25,8 +25,9 @@ function createTree(height = 10, x = 0, z = 0) {
     return tree;
 }
 
-function populateTrees(station) {
+function populateTrees(station, tunnelData) { // Added tunnelData parameter
     // Assuming 'radius', 'gauge', 'scene', 'isInStationArea', 'createTree' are accessible
+    // Assuming 'isInTunnelArea' is accessible (from tunnel.js)
     const groundSize = radius * 2.8; // Matched original environment.js
     const safeRadius = radius + gauge + 15; // Matched original environment.js
     const treeCount = 40; // Matched original environment.js
@@ -38,11 +39,12 @@ function populateTrees(station) {
         // For now, assuming it's available.
         const isInsideCircle = () => Math.sqrt(x*x + z*z) < safeRadius;
         const isInStation = () => isInStationArea(x, z, station); // Dependency on isInStationArea
+        const isInTunnel = () => isInTunnelArea(x, z, tunnelData); // Dependency on isInTunnelArea
 
         do {
             x = (Math.random() - 0.5) * groundSize;
             z = (Math.random() - 0.5) * groundSize;
-        } while (isInsideCircle() || isInStation());
+        } while (isInsideCircle() || isInStation() || isInTunnel()); // Added isInTunnel()
 
         const height = 8 + Math.random() * 7;
         createTree(height, x, z); // Calls local createTree
